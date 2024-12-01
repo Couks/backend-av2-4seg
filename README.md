@@ -1,85 +1,148 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Módulo de Autenticação Seguro
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+## Descrição
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+Sistema de autenticação robusto desenvolvido com NestJS, oferecendo recursos avançados de segurança e gerenciamento de usuários. O projeto implementa práticas modernas de autenticação, incluindo JWT, autenticação de dois fatores (2FA), e um sistema detalhado de logs de segurança.
 
-## Description
+## Funcionalidades Principais
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- Autenticação JWT com refresh token
+- Autenticação de dois fatores (2FA)
+- Sistema de recuperação de senha
+- Logs detalhados de segurança
+- Validação e sanitização de dados
+- Proteção contra ataques XSS
+- Blacklist de tokens
 
-## Project setup
+## Requisitos
+
+- Node.js (v18 ou superior)
+- SQLite3
+- npm
+
+## Instalação
 
 ```bash
-$ pnpm install
+# Clonar o repositório
+git clone [url-do-repositorio]
+cd [nome-do-projeto]
+
+# Instalar dependências
+npm install
+
+# Configurar o banco de dados
+npm prisma migrate dev
 ```
 
-## Compile and run the project
+## Configuração
+
+1. Crie um arquivo `.env` na raiz do projeto:
+
+```env
+DATABASE_URL="file:./dev.db"
+JWT_SECRET="sua-chave-secreta-aqui"
+ALLOWED_ORIGINS="http://localhost:3000"
+```
+
+## Executando o Projeto
 
 ```bash
-# development
-$ pnpm run start
+# Desenvolvimento
+npm run start:dev
 
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
+# Produção
+npm run build
+npm run start:prod
 ```
 
-## Run tests
+O servidor estará disponível em `http://localhost:3001`
+
+## Documentação da API
+
+A documentação completa da API está disponível via Swagger UI em `http://localhost:3001/api/docs`
+
+### Endpoints Disponíveis
+
+#### Autenticação
+
+- `POST /api/login` - Login de usuário
+  - Retorna tokens de acesso e refresh
+- `POST /api/logout` - Logout (invalidação de token)
+- `GET /api/token/refresh` - Renovação de token de acesso
+- `POST /api/token/validate` - Validação de token JWT
+
+#### Usuários
+
+- `POST /api/users/register` - Registro de novo usuário
+- `POST /api/users/2fa/verify` - Verificação de código 2FA
+- `POST /api/users/password/forgot` - Solicitação de reset de senha
+- `POST /api/users/password/reset` - Reset de senha
+
+#### Segurança
+
+- `GET /api/security/logs` - Consulta de logs de segurança
+  - Suporta filtros por:
+    - Ação (LOGIN, LOGOUT, PASSWORD_RESET, etc.)
+    - Status (SUCCESS, FAILURE)
+    - Data (startDate, endDate)
+    - Paginação (page, limit)
+
+## Segurança
+
+O projeto implementa várias camadas de segurança:
+
+1. **Validação de Entrada**
+
+   - Sanitização de dados contra XSS
+   - Validação de tipos e formatos
+   - Proteção contra injeção
+
+2. **Autenticação**
+
+   - Tokens JWT com refresh
+   - Suporte a 2FA
+   - Blacklist de tokens revogados
+
+3. **Logs de Segurança**
+   - Registro detalhado de atividades
+   - Monitoramento de tentativas de acesso
+   - Rastreamento de alterações sensíveis
+
+## Testes
 
 ```bash
-# unit tests
-$ pnpm run test
+# Testes unitários
+npm run test
 
-# e2e tests
-$ pnpm run test:e2e
+# Testes e2e
+npm run test:e2e
 
-# test coverage
-$ pnpm run test:cov
+# Cobertura de testes
+npm run test:cov
 ```
 
-## Resources
+## Estrutura do Projeto
 
-Check out a few resources that may come in handy when working with NestJS:
+```
+src/
+├── auth/
+│   ├── controllers/    # Controladores de autenticação
+│   ├── dto/           # Objetos de transferência de dados
+│   ├── guards/        # Guards de autenticação
+│   ├── interceptors/  # Interceptadores de requisição
+│   └── services/      # Serviços de autenticação
+├── prisma/            # Configuração e schemas do Prisma
+└── main.ts           # Ponto de entrada da aplicação
+```
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+## Contribuindo
 
-## Support
+1. Faça um fork do projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
+3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
+4. Push para a branch (`git push origin feature/AmazingFeature`)
+5. Abra um Pull Request
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+## Licença
 
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE.md](LICENSE.md) para detalhes.
