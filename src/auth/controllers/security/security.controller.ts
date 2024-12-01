@@ -12,10 +12,10 @@ import {
   ApiBearerAuth,
   ApiQuery,
 } from '@nestjs/swagger';
-import { AuthService } from '../auth.service';
-import { JwtAuthGuard } from '../guards/jwt-auth.guard';
-import { CurrentUser } from '../decorators/current-user.decorator';
-import { SanitizeInterceptor } from '../interceptors/sanitize.interceptor';
+import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { SanitizeInterceptor } from 'src/auth/interceptors/sanitize.interceptor';
+import { SecurityLogService } from './security-log.service';
 
 @ApiTags('Security')
 @Controller('api/security')
@@ -23,7 +23,7 @@ import { SanitizeInterceptor } from '../interceptors/sanitize.interceptor';
 @UseInterceptors(SanitizeInterceptor)
 @ApiBearerAuth()
 export class SecurityController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly securityLogService: SecurityLogService) {}
 
   @Get('logs')
   @ApiOperation({ summary: 'Get security logs with filters' })
@@ -71,14 +71,12 @@ export class SecurityController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
   ) {
-    return this.authService.getSecurityLogs(
-      page,
-      limit,
+    return this.securityLogService.getSecurityLogs(page, limit, {
       action,
       status,
-      user.userId,
+      userId: user.userId,
       startDate,
       endDate,
-    );
+    });
   }
 }

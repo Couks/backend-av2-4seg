@@ -5,12 +5,12 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { AuthService } from '../auth.service';
+import { TokenService } from './token.service';
 
 @ApiTags('Token Management')
 @Controller('api/token')
 export class TokenController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly tokenService: TokenService) {}
 
   @Get('refresh')
   @ApiBearerAuth()
@@ -24,7 +24,7 @@ export class TokenController {
   })
   async refreshToken(@Headers('authorization') auth: string) {
     const token = auth?.split(' ')[1];
-    return this.authService.refreshToken(token);
+    return this.tokenService.refreshToken(token);
   }
 
   @Post('validate')
@@ -42,6 +42,6 @@ export class TokenController {
   })
   async validateToken(@Headers('authorization') auth: string) {
     const token = auth?.split(' ')[1];
-    return this.authService.validateToken(token);
+    return this.tokenService.validateToken(token);
   }
 }
