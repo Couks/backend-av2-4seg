@@ -14,10 +14,12 @@ export class EncryptionService {
     32, // Tamanho da chave em bytes
   );
 
+  // Gera um hash da senha usando bcrypt
   async hashPassword(password: string): Promise<string> {
     return bcrypt.hash(password, 12); // 12 rounds de salt
   }
 
+  // Compara uma senha em texto plano com um hash para verificar se são iguais
   async comparePasswords(
     plainText: string,
     hashedPassword: string,
@@ -25,6 +27,7 @@ export class EncryptionService {
     return bcrypt.compare(plainText, hashedPassword);
   }
 
+  // Criptografa um texto usando AES-256-GCM e retorna os dados necessários para descriptografar
   encrypt(text: string): {
     encryptedData: string;
     iv: string;
@@ -45,6 +48,7 @@ export class EncryptionService {
     };
   }
 
+  // Descriptografa dados previamente criptografados usando o IV e authTag originais
   decrypt(encryptedData: string, iv: string, authTag: string): string {
     const decipher = crypto.createDecipheriv(
       this.algorithm,
