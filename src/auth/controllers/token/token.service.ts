@@ -16,6 +16,7 @@ export class TokenService {
     private readonly logger: AppLogger,
   ) {}
 
+  // Gera um novo par de tokens (access e refresh) para um usuário
   async generateTokenPair(userId: number) {
     try {
       // Limpa apenas tokens expirados ou já na blacklist
@@ -42,6 +43,7 @@ export class TokenService {
     }
   }
 
+  // Gera um novo access token a partir de um refresh token válido
   async refreshToken(token: string, request: Request) {
     try {
       // Verificar se token existe no banco primeiro
@@ -79,6 +81,7 @@ export class TokenService {
     }
   }
 
+  // Remove tokens expirados e tokens na blacklist do banco de dados
   private async cleanupOldTokens(userId: number) {
     try {
       const result = await this.prisma.token.deleteMany({
@@ -95,6 +98,7 @@ export class TokenService {
     }
   }
 
+  // Salva um novo refresh token no banco de dados
   private async saveRefreshToken(token: string, userId: number) {
     const uniqueToken = `${token}_${Date.now()}`;
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -117,6 +121,7 @@ export class TokenService {
     }
   }
 
+  // Verifica se um token é válido e retorna seu payload
   async validateToken(
     token: string,
   ): Promise<{ valid: boolean; payload?: any }> {
@@ -149,6 +154,7 @@ export class TokenService {
     }
   }
 
+  // Adiciona um token à blacklist para invalidá-lo
   async blacklistToken(token: string) {
     try {
       await this.prisma.token.updateMany({
@@ -158,10 +164,5 @@ export class TokenService {
     } catch (error) {
       console.error('[TokenService] Error blacklisting token:', error);
     }
-  }
-
-  private maskToken(token: string): string {
-    // Implementação para mascarar o token
-    return '**********';
   }
 }

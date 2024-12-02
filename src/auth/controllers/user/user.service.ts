@@ -35,6 +35,7 @@ export class UserService {
     private tokenService: TokenService,
     private readonly logger: AppLogger,
   ) {
+    // Configura o transporter do nodemailer para envio de emails
     this.transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
       service: 'gmail',
@@ -45,6 +46,7 @@ export class UserService {
     });
   }
 
+  // Registra um novo usuário no sistema
   async register(dto: RegisterDto, request: ExpressRequest) {
     this.logger.log(
       `Attempting to register user with email: ${dto.email}`,
@@ -96,6 +98,7 @@ export class UserService {
     };
   }
 
+  // Envia email de verificação com código para o usuário
   private async sendVerificationEmail(email: string, code: string) {
     this.logger.log(`Sending verification email to: ${email}`, this.CONTEXT);
     const mailOptions = {
@@ -131,6 +134,7 @@ export class UserService {
     }
   }
 
+  // Envia email de confirmação após verificação bem sucedida
   private async sendVerificationConfirmationEmail(email: string) {
     this.logger.log(
       `Sending verification confirmation email to: ${email}`,
@@ -169,6 +173,7 @@ export class UserService {
     }
   }
 
+  // Verifica o email do usuário usando o código enviado
   async verifyEmail(dto: VerifyEmailDto) {
     this.logger.log(
       `Attempting to verify email for: ${dto.email}`,
@@ -207,6 +212,7 @@ export class UserService {
     return { message: 'Email verified successfully' };
   }
 
+  // Habilita autenticação de dois fatores para um usuário
   async enable2FA(userId: number) {
     this.logger.log(
       `Attempting to enable 2FA for user ID: ${userId}`,
@@ -270,6 +276,7 @@ export class UserService {
     }
   }
 
+  // Confirma a configuração do 2FA usando um código
   async confirm2FA(userId: number, code: string) {
     this.logger.log(
       `Attempting to confirm 2FA for user ID: ${userId}`,
@@ -327,6 +334,7 @@ export class UserService {
     return { message: '2FA enabled successfully' };
   }
 
+  // Inicia o processo de recuperação de senha
   async forgotPassword(dto: ForgotPasswordDto) {
     this.logger.log(
       `Password reset requested for email: ${dto.email}`,
@@ -420,6 +428,7 @@ export class UserService {
     }
   }
 
+  // Redefine a senha do usuário usando o token de recuperação
   async resetPassword(dto: ResetPasswordDto) {
     this.logger.log('Attempting to reset password with token', this.CONTEXT);
     const resetRecord = await this.validateResetToken(dto.token);
@@ -437,6 +446,7 @@ export class UserService {
     return { message: 'Password reset successfully' };
   }
 
+  // Cria um registro de recuperação de senha
   private async createPasswordReset(email: string, token: string) {
     this.logger.log(
       `Creating password reset record for email: ${email}`,
@@ -461,6 +471,7 @@ export class UserService {
     });
   }
 
+  // Valida o token de recuperação de senha
   private async validateResetToken(token: string) {
     this.logger.log('Validating reset token', this.CONTEXT);
     const resetRecord = await this.prisma.passwordReset.findFirst({
@@ -479,6 +490,7 @@ export class UserService {
     return resetRecord;
   }
 
+  // Atualiza a senha do usuário
   private async updatePassword(
     email: string,
     hashedPassword: string,
@@ -497,6 +509,7 @@ export class UserService {
     ]);
   }
 
+  // Verifica o código 2FA durante o login
   async verify2FA(dto: Verify2FADto, request: ExpressRequest) {
     this.logger.log('Verifying 2FA code', this.CONTEXT);
     const decoded = this.jwtService.verify(dto.tempToken);
@@ -538,6 +551,7 @@ export class UserService {
     return tokens;
   }
 
+  // Obtém os dados do usuário atual
   async getCurrentUser(userId: number) {
     this.logger.log(
       `Getting current user data for ID: ${userId}`,

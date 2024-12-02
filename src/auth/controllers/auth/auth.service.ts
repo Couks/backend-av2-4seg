@@ -7,6 +7,7 @@ import { Request as ExpressRequest } from 'express';
 import { LoginDto } from './dto/login.dto';
 import { JwtService } from '@nestjs/jwt';
 
+// Serviço responsável pela autenticação de usuários
 @Injectable()
 export class AuthService {
   constructor(
@@ -17,6 +18,7 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
+  // Realiza o login do usuário, verificando credenciais e 2FA se necessário
   async login(dto: LoginDto, request: ExpressRequest) {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
@@ -49,6 +51,7 @@ export class AuthService {
     }
 
     try {
+      // Se 2FA estiver ativo, retorna token temporário
       if (user.twoFactorEnabled && user.twoFactorVerified) {
         const tempToken = this.jwtService.sign(
           { sub: user.id, temp: true },
@@ -57,6 +60,7 @@ export class AuthService {
         return { tempToken };
       }
 
+      // Gera par de tokens e registra login bem sucedido
       const tokens = await this.tokenService.generateTokenPair(user.id);
       await this.securityLogService.logSuccessfulLogin(user.id, request);
       return tokens;
@@ -66,10 +70,13 @@ export class AuthService {
     }
   }
 
+  // Realiza o logout do usuário, invalidando todos os seus tokens
   async logout(token: string, request: ExpressRequest) {
     try {
+      // Decodifica o token para obter o ID do usuário
       const decoded = this.jwtService.decode(token);
 
+      // Invalida todos os tokens ativos do usuário
       if (decoded && typeof decoded === 'object' && decoded.sub) {
         await this.prisma.token.updateMany({
           where: {
@@ -80,8 +87,10 @@ export class AuthService {
         });
       }
 
+      // Adiciona o token atual à blacklist
       await this.tokenService.blacklistToken(token);
 
+      // Registra o logout nos logs de segurança
       await this.securityLogService.logLogout(request);
 
       return { message: 'Logged out successfully' };
