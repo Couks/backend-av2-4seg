@@ -8,16 +8,19 @@ datasource db {
 }
 
 model User {
-    id               Int           @id @default(autoincrement())
-    email            String        @unique
-    name             String
-    password         String
-    twoFactorEnabled Boolean       @default(false)
-    twoFactorSecret  String?
-    createdAt        DateTime      @default(now())
-    updatedAt        DateTime      @updatedAt
-    refreshTokens    Token[]
-    securityLogs     SecurityLog[]
+    id                Int           @id @default(autoincrement())
+    email             String        @unique
+    name              String
+    password          String
+    verificationCode  String?
+    isVerified        Boolean       @default(false)
+    twoFactorSecret   String?
+    twoFactorEnabled  Boolean       @default(false)
+    twoFactorVerified Boolean       @default(false)
+    createdAt         DateTime      @default(now())
+    updatedAt         DateTime      @updatedAt
+    refreshTokens     Token[]
+    securityLogs      SecurityLog[]
 }
 
 model Token {

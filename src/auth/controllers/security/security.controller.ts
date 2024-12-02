@@ -12,10 +12,11 @@ import {
   ApiBearerAuth,
   ApiQuery,
 } from '@nestjs/swagger';
-import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { SanitizeInterceptor } from 'src/auth/interceptors/sanitize.interceptor';
+import { CurrentUser } from '../../../common/decorators/current-user.decorator';
+import { SanitizeInterceptor } from '../../../common/interceptors/sanitize.interceptor';
 import { SecurityLogService } from './security-log.service';
+import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
+import { AppLogger } from 'src/common/logger/app.logger';
 
 @ApiTags('Security')
 @Controller('api/security')
@@ -23,20 +24,34 @@ import { SecurityLogService } from './security-log.service';
 @UseInterceptors(SanitizeInterceptor)
 @ApiBearerAuth()
 export class SecurityController {
+  private readonly CONTEXT = 'SecurityController';
+  private readonly logger = AppLogger.forContext(this.CONTEXT);
+
   constructor(private readonly securityLogService: SecurityLogService) {}
 
   @Get('logs')
-  @ApiOperation({ summary: 'Get security logs with filters' })
-  @ApiQuery({ name: 'page', required: false, type: Number })
-  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiOperation({
+    summary: 'Get security logs',
+    description: 'Retrieve security logs with pagination and filters',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page',
+  })
   @ApiQuery({
     name: 'action',
     required: false,
-    enum: ['LOGIN', 'LOGOUT', 'PASSWORD_RESET', 'TWO_FACTOR_VERIFY'],
+    enum: ['LOGIN', 'LOGOUT', 'REGISTER'],
   })
   @ApiQuery({ name: 'status', required: false, enum: ['SUCCESS', 'FAILURE'] })
-  @ApiQuery({ name: 'startDate', required: false, type: String })
-  @ApiQuery({ name: 'endDate', required: false, type: String })
   @ApiResponse({
     status: 200,
     description: 'Security logs retrieved successfully',
@@ -49,8 +64,7 @@ export class SecurityController {
             status: 'SUCCESS',
             ipAddress: '127.0.0.1',
             userAgent: 'Mozilla/5.0...',
-            details: 'Login successful for user@example.com',
-            createdAt: '2024-03-19T12:00:00Z',
+            createdAt: '2024-01-01T00:00:00Z',
           },
         ],
         pagination: {
@@ -62,21 +76,34 @@ export class SecurityController {
       },
     },
   })
-  async getLogs(
-    @CurrentUser() user: any,
-    @Query('page') page = 1,
-    @Query('limit') limit = 10,
-    @Query('action') action?: string,
-    @Query('status') status?: string,
-    @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string,
-  ) {
-    return this.securityLogService.getSecurityLogs(page, limit, {
-      action,
-      status,
-      userId: user.userId,
-      startDate,
-      endDate,
-    });
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async getLogs(@Query() query: any, @CurrentUser() user: any) {
+    this.logger.log(
+      `Security logs request - User: ${user.userId}, Page: ${query.page || 1}`,
+      this.CONTEXT,
+    );
+    try {
+      this.logger.debug(`Query params: ${JSON.stringify(query)}`, this.CONTEXT);
+      const result = await this.securityLogService.getSecurityLogs(
+        query.page || 1,
+        query.limit || 10,
+        {
+          userId: user.userId,
+          ...query,
+        },
+      );
+      this.logger.log(
+        `Retrieved ${result.logs.length} logs successfully`,
+        this.CONTEXT,
+      );
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `Failed to fetch security logs - User: ${user.userId}`,
+        error.stack,
+        this.CONTEXT,
+      );
+      throw error;
+    }
   }
 }

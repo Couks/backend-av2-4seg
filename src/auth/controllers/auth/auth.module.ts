@@ -3,14 +3,14 @@ import { JwtModule } from '@nestjs/jwt';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 
-import { EncryptionModule } from '../../encryption/encryption.module';
+import { EncryptionModule } from '../../../common/encryption/encryption.module';
 import { SecurityModule } from '../security/security.module';
 import { TokenModule } from '../token/token.module';
 
 @Module({
   imports: [
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'your-secret-key',
+      secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '15m' },
     }),
     TokenModule,

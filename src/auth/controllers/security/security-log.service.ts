@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { LogAction, LogStatus, SecurityLog } from '../../types';
+import { Request as ExpressRequest } from 'express';
 
 @Injectable()
 export class SecurityLogService {
@@ -41,47 +43,54 @@ export class SecurityLogService {
     };
   }
 
-  async logFailedLogin(userId: number) {
+  async logFailedLogin(userId: number | null, request: ExpressRequest) {
     await this.createLog({
       userId,
-      action: 'LOGIN',
-      status: 'FAILURE',
+      action: LogAction.LOGIN,
+      status: LogStatus.FAILURE,
+      ipAddress: request.ip,
+      userAgent: request.headers['user-agent'] || 'Unknown',
+      details: JSON.stringify({
+        timestamp: new Date(),
+        headers: request.headers,
+        geoLocation: request.headers['cf-ipcountry'],
+      }),
     });
   }
 
-  async logSuccessfulLogin(userId: number) {
+  async logSuccessfulLogin(userId: number, request: ExpressRequest) {
     await this.createLog({
       userId,
-      action: 'LOGIN',
-      status: 'SUCCESS',
+      action: LogAction.LOGIN,
+      status: LogStatus.SUCCESS,
+      ipAddress: request.ip,
+      userAgent: request.headers['user-agent'] || 'Unknown',
     });
   }
 
-  async logLogout() {
+  async logLogout(request: ExpressRequest) {
     await this.createLog({
-      action: 'LOGOUT',
-      status: 'SUCCESS',
+      action: LogAction.LOGOUT,
+      status: LogStatus.SUCCESS,
+      ipAddress: request.ip,
+      userAgent: request.headers['user-agent'] || 'Unknown',
     });
   }
 
-  async logUserRegistration(userId: number) {
+  async logUserRegistration(userId: number, request: ExpressRequest) {
     await this.createLog({
       userId,
-      action: 'REGISTER',
-      status: 'SUCCESS',
+      action: LogAction.REGISTER,
+      status: LogStatus.SUCCESS,
+      ipAddress: request.ip,
+      userAgent: request.headers['user-agent'] || 'Unknown',
     });
   }
 
-  private async createLog(data: {
-    userId?: number;
-    action: string;
-    status: string;
-  }) {
+  public async createLog(data: SecurityLog) {
     return this.prisma.securityLog.create({
       data: {
         ...data,
-        ipAddress: '127.0.0.1',
-        userAgent: 'Unknown',
       },
     });
   }

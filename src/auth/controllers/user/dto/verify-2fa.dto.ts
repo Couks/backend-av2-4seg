@@ -1,4 +1,4 @@
-import { IsString } from 'class-validator';
+import { IsString, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class Verify2FADto {
@@ -6,7 +6,8 @@ export class Verify2FADto {
   @IsString()
   code: string;
 
-  @ApiProperty({ example: 'eyJhbGciOiJIUzI1NiIs...' })
+  @ApiProperty({ example: '' })
   @IsString()
-  tempToken: string;
+  @IsOptional()
+  tempToken?: string;
 }

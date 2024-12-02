@@ -121,20 +121,6 @@ npm run test:e2e
 npm run test:cov
 ```
 
-## Estrutura do Projeto
-
-```
-src/
-├── auth/
-│   ├── controllers/    # Controladores de autenticação
-│   ├── dto/           # Objetos de transferência de dados
-│   ├── guards/        # Guards de autenticação
-│   ├── interceptors/  # Interceptadores de requisição
-│   └── services/      # Serviços de autenticação
-├── prisma/            # Configuração e schemas do Prisma
-└── main.ts           # Ponto de entrada da aplicação
-```
-
 ## Contribuindo
 
 1. Faça um fork do projeto
