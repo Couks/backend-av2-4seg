@@ -25,6 +25,7 @@ import { AppLogger } from 'src/common/logger/app.logger';
 @Injectable()
 export class UserService {
   private readonly transporter: nodemailer.Transporter;
+  private readonly CONTEXT = 'UserService';
 
   constructor(
     private prisma: PrismaService,
@@ -45,7 +46,10 @@ export class UserService {
   }
 
   async register(dto: RegisterDto, request: ExpressRequest) {
-    this.logger.log(`Attempting to register user with email: ${dto.email}`);
+    this.logger.log(
+      `Attempting to register user with email: ${dto.email}`,
+      this.CONTEXT,
+    );
 
     const existingUser = await this.prisma.user.findUnique({
       where: { email: dto.email },
@@ -54,6 +58,7 @@ export class UserService {
     if (existingUser) {
       this.logger.warn(
         `Registration failed - Email already exists: ${dto.email}`,
+        this.CONTEXT,
       );
       throw new BadRequestException('Email already registered');
     }
@@ -78,7 +83,10 @@ export class UserService {
       },
     });
 
-    this.logger.log(`User registered successfully: ${user.email}`);
+    this.logger.log(
+      `User registered successfully: ${user.email}`,
+      this.CONTEXT,
+    );
     await this.sendVerificationEmail(user.email, verificationCode);
     await this.securityLogService.logUserRegistration(user.id, request);
 
@@ -89,7 +97,7 @@ export class UserService {
   }
 
   private async sendVerificationEmail(email: string, code: string) {
-    this.logger.log(`Sending verification email to: ${email}`);
+    this.logger.log(`Sending verification email to: ${email}`, this.CONTEXT);
     const mailOptions = {
       from: {
         name: 'Verificação de Conta',
@@ -109,18 +117,25 @@ export class UserService {
 
     try {
       await this.transporter.sendMail(mailOptions);
-      this.logger.log(`Verification email sent successfully to: ${email}`);
+      this.logger.log(
+        `Verification email sent successfully to: ${email}`,
+        this.CONTEXT,
+      );
     } catch (error) {
       this.logger.error(
         `Failed to send verification email to: ${email}`,
         error.stack,
+        this.CONTEXT,
       );
       throw error;
     }
   }
 
   private async sendVerificationConfirmationEmail(email: string) {
-    this.logger.log(`Sending verification confirmation email to: ${email}`);
+    this.logger.log(
+      `Sending verification confirmation email to: ${email}`,
+      this.CONTEXT,
+    );
     const mailOptions = {
       from: {
         name: 'Verificação de Conta',
@@ -142,18 +157,23 @@ export class UserService {
       await this.transporter.sendMail(mailOptions);
       this.logger.log(
         `Verification confirmation email sent successfully to: ${email}`,
+        this.CONTEXT,
       );
     } catch (error) {
       this.logger.error(
         `Failed to send verification confirmation email to: ${email}`,
         error.stack,
+        this.CONTEXT,
       );
       throw error;
     }
   }
 
   async verifyEmail(dto: VerifyEmailDto) {
-    this.logger.log(`Attempting to verify email for: ${dto.email}`);
+    this.logger.log(
+      `Attempting to verify email for: ${dto.email}`,
+      this.CONTEXT,
+    );
     const user = await this.prisma.user.findFirst({
       where: {
         email: dto.email,
@@ -163,7 +183,10 @@ export class UserService {
     });
 
     if (!user) {
-      this.logger.warn(`Invalid verification code for email: ${dto.email}`);
+      this.logger.warn(
+        `Invalid verification code for email: ${dto.email}`,
+        this.CONTEXT,
+      );
       throw new BadRequestException('Invalid verification code');
     }
 
@@ -175,31 +198,44 @@ export class UserService {
       },
     });
 
-    this.logger.log(`Email verified successfully for: ${dto.email}`);
+    this.logger.log(
+      `Email verified successfully for: ${dto.email}`,
+      this.CONTEXT,
+    );
     await this.sendVerificationConfirmationEmail(user.email);
 
     return { message: 'Email verified successfully' };
   }
 
   async enable2FA(userId: number) {
-    this.logger.log(`Attempting to enable 2FA for user ID: ${userId}`);
+    this.logger.log(
+      `Attempting to enable 2FA for user ID: ${userId}`,
+      this.CONTEXT,
+    );
     try {
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
       });
 
       if (!user) {
-        this.logger.warn(`User not found for 2FA enable attempt: ${userId}`);
+        this.logger.warn(
+          `User not found for 2FA enable attempt: ${userId}`,
+          this.CONTEXT,
+        );
         throw new NotFoundException('User not found');
       }
 
       if (user.twoFactorEnabled) {
-        this.logger.warn(`2FA already enabled for user: ${userId}`);
+        this.logger.warn(
+          `2FA already enabled for user: ${userId}`,
+          this.CONTEXT,
+        );
         throw new BadRequestException('2FA is already enabled');
       }
 
       const secret = speakeasy.generateSecret({
         name: `2FA AV2 4SEG:${user.email}`,
+        length: 20,
       });
 
       await this.prisma.user.update({
@@ -212,25 +248,33 @@ export class UserService {
 
       const otpauthUrl = speakeasy.otpauthURL({
         secret: secret.base32,
-        label: user.email,
-        issuer: '4SEG',
+        label: encodeURIComponent(user.email),
+        issuer: encodeURIComponent('4SEG'),
+        encoding: 'base32',
       });
 
       const qrCode = await QRCode.toDataURL(otpauthUrl);
-      this.logger.log(`2FA setup successful for user: ${userId}`);
+      this.logger.log(`2FA setup successful for user: ${userId}`, this.CONTEXT);
 
       return {
         secret: secret.base32,
         qrCode,
       };
     } catch (error) {
-      this.logger.error(`Error enabling 2FA for user ${userId}:`, error.stack);
+      this.logger.error(
+        `Error enabling 2FA for user ${userId}:`,
+        error.stack,
+        this.CONTEXT,
+      );
       throw new InternalServerErrorException('Failed to enable 2FA');
     }
   }
 
   async confirm2FA(userId: number, code: string) {
-    this.logger.log(`Attempting to confirm 2FA for user ID: ${userId}`);
+    this.logger.log(
+      `Attempting to confirm 2FA for user ID: ${userId}`,
+      this.CONTEXT,
+    );
 
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -243,24 +287,28 @@ export class UserService {
     });
 
     if (!user?.twoFactorSecret) {
-      this.logger.warn(`2FA not initialized for user: ${userId}`);
+      this.logger.warn(`2FA not initialized for user: ${userId}`, this.CONTEXT);
       throw new BadRequestException('2FA not initialized');
-    }
-
-    if (user.twoFactorEnabled) {
-      this.logger.warn(`2FA already enabled for user: ${userId}`);
-      throw new BadRequestException('2FA is already enabled');
     }
 
     const isValid = speakeasy.totp.verify({
       secret: user.twoFactorSecret,
       encoding: 'base32',
       token: code,
-      window: 2, // Permite 2 intervalos de 30s antes/depois
+      window: 2,
+      algorithm: 'sha1',
+      digits: 6,
     });
 
     if (!isValid) {
-      this.logger.warn(`Invalid 2FA code provided for user: ${userId}`);
+      this.logger.warn(
+        `Invalid 2FA code provided for user: ${userId}`,
+        this.CONTEXT,
+      );
+      this.logger.debug(
+        `Code provided: ${code}, Secret: ${user.twoFactorSecret}`,
+        this.CONTEXT,
+      );
       throw new UnauthorizedException('Invalid 2FA code');
     }
 
@@ -272,12 +320,18 @@ export class UserService {
       },
     });
 
-    this.logger.log(`2FA confirmed successfully for user: ${userId}`);
+    this.logger.log(
+      `2FA confirmed successfully for user: ${userId}`,
+      this.CONTEXT,
+    );
     return { message: '2FA enabled successfully' };
   }
 
   async forgotPassword(dto: ForgotPasswordDto) {
-    this.logger.log(`Password reset requested for email: ${dto.email}`);
+    this.logger.log(
+      `Password reset requested for email: ${dto.email}`,
+      this.CONTEXT,
+    );
     const recentRequests = await this.prisma.passwordReset.count({
       where: {
         email: dto.email,
@@ -288,7 +342,10 @@ export class UserService {
     });
 
     if (recentRequests >= 3) {
-      this.logger.warn(`Too many reset requests for email: ${dto.email}`);
+      this.logger.warn(
+        `Too many reset requests for email: ${dto.email}`,
+        this.CONTEXT,
+      );
       throw new BadRequestException('Too many reset requests');
     }
 
@@ -297,7 +354,10 @@ export class UserService {
     });
 
     if (!user) {
-      this.logger.warn(`User not found for password reset: ${dto.email}`);
+      this.logger.warn(
+        `User not found for password reset: ${dto.email}`,
+        this.CONTEXT,
+      );
       throw new NotFoundException('User not found');
     }
 
@@ -343,6 +403,7 @@ export class UserService {
       await this.transporter.sendMail(mailOptions);
       this.logger.log(
         `Password reset email sent successfully to: ${dto.email}`,
+        this.CONTEXT,
       );
 
       return {
@@ -353,13 +414,14 @@ export class UserService {
       this.logger.error(
         `Failed to send password reset email to: ${dto.email}`,
         error.stack,
+        this.CONTEXT,
       );
       throw new BadRequestException('Failed to send password reset email');
     }
   }
 
   async resetPassword(dto: ResetPasswordDto) {
-    this.logger.log('Attempting to reset password with token');
+    this.logger.log('Attempting to reset password with token', this.CONTEXT);
     const resetRecord = await this.validateResetToken(dto.token);
     const hashedPassword = await this.encryption.hashPassword(dto.newPassword);
 
@@ -370,12 +432,16 @@ export class UserService {
     );
     this.logger.log(
       `Password reset successful for email: ${resetRecord.email}`,
+      this.CONTEXT,
     );
     return { message: 'Password reset successfully' };
   }
 
   private async createPasswordReset(email: string, token: string) {
-    this.logger.log(`Creating password reset record for email: ${email}`);
+    this.logger.log(
+      `Creating password reset record for email: ${email}`,
+      this.CONTEXT,
+    );
     await this.prisma.passwordReset.updateMany({
       where: {
         email,
@@ -396,7 +462,7 @@ export class UserService {
   }
 
   private async validateResetToken(token: string) {
-    this.logger.log('Validating reset token');
+    this.logger.log('Validating reset token', this.CONTEXT);
     const resetRecord = await this.prisma.passwordReset.findFirst({
       where: {
         token,
@@ -406,7 +472,7 @@ export class UserService {
     });
 
     if (!resetRecord) {
-      this.logger.warn('Invalid or expired reset token');
+      this.logger.warn('Invalid or expired reset token', this.CONTEXT);
       throw new BadRequestException('Invalid or expired reset token');
     }
 
@@ -418,7 +484,7 @@ export class UserService {
     hashedPassword: string,
     resetId: number,
   ) {
-    this.logger.log(`Updating password for email: ${email}`);
+    this.logger.log(`Updating password for email: ${email}`, this.CONTEXT);
     await Promise.all([
       this.prisma.user.update({
         where: { email },
@@ -432,14 +498,17 @@ export class UserService {
   }
 
   async verify2FA(dto: Verify2FADto, request: ExpressRequest) {
-    this.logger.log('Verifying 2FA code');
+    this.logger.log('Verifying 2FA code', this.CONTEXT);
     const decoded = this.jwtService.verify(dto.tempToken);
     const user = await this.prisma.user.findUnique({
       where: { id: decoded.sub },
     });
 
     if (!user?.twoFactorSecret) {
-      this.logger.warn(`2FA not enabled for user ID: ${decoded.sub}`);
+      this.logger.warn(
+        `2FA not enabled for user ID: ${decoded.sub}`,
+        this.CONTEXT,
+      );
       throw new UnauthorizedException('2FA not enabled');
     }
 
@@ -451,15 +520,47 @@ export class UserService {
     });
 
     if (!isCodeValid) {
-      this.logger.warn(`Invalid 2FA code for user ID: ${decoded.sub}`);
+      this.logger.warn(
+        `Invalid 2FA code for user ID: ${decoded.sub}`,
+        this.CONTEXT,
+      );
       await this.securityLogService.logFailedLogin(user.id, request);
       throw new UnauthorizedException('Invalid 2FA code');
     }
 
     const tokens = await this.tokenService.generateTokenPair(user.id);
     await this.securityLogService.logSuccessfulLogin(user.id, request);
-    this.logger.log(`2FA verification successful for user ID: ${decoded.sub}`);
+    this.logger.log(
+      `2FA verification successful for user ID: ${decoded.sub}`,
+      this.CONTEXT,
+    );
 
     return tokens;
+  }
+
+  async getCurrentUser(userId: number) {
+    this.logger.log(
+      `Getting current user data for ID: ${userId}`,
+      this.CONTEXT,
+    );
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        isVerified: true,
+        twoFactorEnabled: true,
+        createdAt: true,
+      },
+    });
+
+    if (!user) {
+      this.logger.warn(`User not found: ${userId}`, this.CONTEXT);
+      throw new NotFoundException('User not found');
+    }
+
+    return user;
   }
 }

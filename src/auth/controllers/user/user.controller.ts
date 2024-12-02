@@ -7,6 +7,7 @@ import {
   HttpStatus,
   UseGuards,
   UnauthorizedException,
+  Get,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -397,6 +398,45 @@ export class UserController {
         `2FA confirmation failed for user ${user.userId}`,
         error.stack,
         this.CONTEXT,
+      );
+      throw error;
+    }
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Obter dados do usuário atual',
+    description: 'Retorna os dados do usuário autenticado',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Dados do usuário',
+    schema: {
+      example: {
+        id: 1,
+        email: 'user@example.com',
+        name: 'User Name',
+        isVerified: true,
+        twoFactorEnabled: false,
+        createdAt: '2024-01-01T00:00:00.000Z',
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Não autorizado' })
+  async getCurrentUser(@CurrentUser() user: UserPayload) {
+    this.logger.log(`Fetching user data for ID: ${user.userId}`);
+    try {
+      const userData = await this.userService.getCurrentUser(user.userId);
+      this.logger.log(
+        `User data retrieved successfully for ID: ${user.userId}`,
+      );
+      return userData;
+    } catch (error) {
+      this.logger.error(
+        `Failed to get user data for ID: ${user.userId}`,
+        error.stack,
       );
       throw error;
     }

@@ -3,13 +3,17 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { SecurityLogService } from '../security/security-log.service';
 import { Request } from 'express';
+import { AppLogger } from 'src/common/logger/app.logger';
 
 @Injectable()
 export class TokenService {
+  private readonly CONTEXT = 'TokenService';
+
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
     private securityLogService: SecurityLogService,
+    private readonly logger: AppLogger,
   ) {}
 
   async generateTokenPair(userId: number) {
@@ -38,44 +42,39 @@ export class TokenService {
     }
   }
 
-  async refreshToken(refreshToken: string, request: Request) {
+  async refreshToken(token: string, request: Request) {
     try {
-      // Verifica JWT
-      const payload = await this.jwtService.verifyAsync(refreshToken);
-
-      if (payload.type !== 'refresh') {
-        throw new UnauthorizedException('Invalid token type');
-      }
-
-      // Verifica no banco
+      // Verificar se token existe no banco primeiro
       const tokenRecord = await this.prisma.token.findFirst({
         where: {
-          token: { contains: refreshToken },
+          token: { contains: token },
           blacklisted: false,
           expires: { gt: new Date() },
-          userId: payload.sub,
         },
       });
 
       if (!tokenRecord) {
+        this.logger.warn('Token not found or expired', this.CONTEXT);
         throw new UnauthorizedException('Invalid refresh token');
       }
 
-      // Gera novo access token
-      const newAccessToken = await this.jwtService.signAsync(
-        { sub: tokenRecord.userId, type: 'access' },
+      // Então verificar JWT
+      const payload = this.jwtService.verify(token);
+      if (payload.type !== 'refresh') {
+        this.logger.warn('Invalid token type for refresh', this.CONTEXT);
+        throw new UnauthorizedException('Invalid token type');
+      }
+
+      // Gerar novo access token
+      const accessToken = this.jwtService.sign(
+        { sub: payload.sub, type: 'access' },
         { expiresIn: '15m' },
       );
 
-      // Registra o refresh
-      await this.securityLogService.logSuccessfulLogin(
-        tokenRecord.userId,
-        request,
-      );
-
-      return { accessToken: newAccessToken };
+      this.logger.log(`Token refreshed for user: ${payload.sub}`, this.CONTEXT);
+      return { accessToken };
     } catch (error) {
-      console.error('[TokenService] Refresh token error:', error);
+      this.logger.error('Token refresh failed:', error.stack, this.CONTEXT);
       throw new UnauthorizedException('Invalid refresh token');
     }
   }
