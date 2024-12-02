@@ -3,10 +3,12 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { LogAction, LogStatus, SecurityLog } from '../../types';
 import { Request as ExpressRequest } from 'express';
 
+// Serviço responsável por gerenciar logs de segurança da aplicação
 @Injectable()
 export class SecurityLogService {
   constructor(private prisma: PrismaService) {}
 
+  // Busca logs de segurança com paginação e filtros
   async getSecurityLogs(
     page: number,
     limit: number,
@@ -43,6 +45,7 @@ export class SecurityLogService {
     };
   }
 
+  // Registra tentativa de login mal sucedida
   async logFailedLogin(userId: number | null, request: ExpressRequest) {
     await this.createLog({
       userId,
@@ -58,6 +61,7 @@ export class SecurityLogService {
     });
   }
 
+  // Registra login bem sucedido
   async logSuccessfulLogin(userId: number, request: ExpressRequest) {
     await this.createLog({
       userId,
@@ -68,6 +72,7 @@ export class SecurityLogService {
     });
   }
 
+  // Registra logout do usuário
   async logLogout(request: ExpressRequest) {
     await this.createLog({
       action: LogAction.LOGOUT,
@@ -77,6 +82,7 @@ export class SecurityLogService {
     });
   }
 
+  // Registra novo cadastro de usuário
   async logUserRegistration(userId: number, request: ExpressRequest) {
     await this.createLog({
       userId,
@@ -87,6 +93,7 @@ export class SecurityLogService {
     });
   }
 
+  // Cria um novo registro de log no banco de dados
   public async createLog(data: SecurityLog) {
     return this.prisma.securityLog.create({
       data: {
@@ -95,6 +102,7 @@ export class SecurityLogService {
     });
   }
 
+  // Constrói a cláusula where para filtrar logs
   private buildWhereClause(filters: any) {
     const { action, status, userId, startDate, endDate } = filters;
     return {
@@ -111,6 +119,7 @@ export class SecurityLogService {
     };
   }
 
+  // Formata os detalhes do log para exibição
   private formatLogDetails(log: any) {
     const userEmail = log.user?.email || 'Unknown user';
     return {
@@ -119,6 +128,7 @@ export class SecurityLogService {
     };
   }
 
+  // Gera mensagem descritiva para cada tipo de log
   private generateLogDetails(
     action: string,
     status: string,
