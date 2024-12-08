@@ -19,7 +19,6 @@ import {
 import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
-import { LogoutDto } from './dto/logout.dto';
 import { Request } from 'express';
 import { AppLogger } from 'src/common/logger/app.logger';
 import { SecurityLogService } from '../security/security-log.service';

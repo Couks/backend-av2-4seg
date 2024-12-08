@@ -55,11 +55,11 @@ npm run build
 npm run start:prod
 ```
 
-O servidor estará disponível em `http://localhost:3001`
+O servidor estará disponível em `https://backend-av2-4seg.onrender.com/`
 
 ## Documentação da API
 
-A documentação completa da API está disponível via Swagger UI em `http://localhost:3001/api/docs`
+A documentação completa da API está disponível via Swagger UI em `https://backend-av2-4seg.onrender.com//api/docs`
 
 ### Endpoints Disponíveis
 
