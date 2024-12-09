@@ -16,9 +16,21 @@ async function bootstrap() {
   app.use(helmet());
   // Configura CORS para permitir requisições de origens específicas
   app.enableCors({
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || 'http://localhost:3000',
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    origin: process.env.ALLOWED_ORIGINS?.split(',') || [
+      'https://frontend-av2-4seg.vercel.app',
+      'http://localhost:3000',
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: [
+      'Origin',
+      'X-Requested-With',
+      'Content-Type',
+      'Accept',
+      'Authorization',
+    ],
     credentials: true,
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   });
 
   // Adiciona pipes globais para validação de dados
